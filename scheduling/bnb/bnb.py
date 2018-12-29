@@ -1,6 +1,10 @@
 """
 This script contain the definitions a Branch & Bound algorithm and 
 the derivation for the very problem in object
+
+References: 
+-  Hariri & Potts ("An algorithm for single machine sequencing with release dates to minimize total weighted completion time")
+-  Belouadah, Posner & Potts ("Scheduling with release dates on a single machine to minimize total weighted completion time")
 """
 
 from queue import Queue
@@ -32,7 +36,7 @@ def scheduling_1rC_BnB(jobs):
     q = Queue()
     q.put(root)
     # instantiating a bottom level candidate nodes
-    best = []
+    schedules = []
 
     # 2. starting to iterate over the BnB tree (level i = i fixed scheduled jobs)
     while not q.empty():
@@ -52,14 +56,14 @@ def scheduling_1rC_BnB(jobs):
             if child.lower_bound <= active_node.lower_bound or child.lower_bound <= root.lower_bound:
                 print(child.lower_bound, "OK")
                 if child_level == len(jobs):
-                    best.append(child)
+                    schedules.append(child)
                 else:
                     q.put(child)
             else:
-                print("PRUNED!")
+                print(child.lower_bound, "PRUNED!")
         print("")
 
-    return [(b.weighted_completion_time, b.scheduled) for b in best]
+    return [(s.weighted_completion_time, s.scheduled) for s in schedules]
 
                 
             
@@ -75,26 +79,47 @@ def create_first_candidates(state, level):
     # retrieve jobs by release_dates
     jobs_rd = get_jobs_dictionary(state.unscheduled)
     release_dates = list(jobs_rd.keys())
-    # -> compute time variable from 
+    # -> compute time variable for further comparison
     T = max(state.completion_time, min(release_dates))
 
-    # filtering jobs by p/w ratio and earliest release dates
-    candidates = list(filter(lambda j: j.release_date <= T, state.unscheduled))
+    # -> filtering the eligible unscheduled
+    unscheduled = list(filter(lambda j: j.release_date <= state.completion_time, state.unscheduled))
     
-    # create new states
-    for job in candidates:
-        s = State(level)
-        # update (un)scheduled in new states
-        s.scheduled = state.scheduled[:] + [job]
-        s.unscheduled = state.unscheduled[:]
-        s.unscheduled.remove(job)
-        # update completion time
-        s.completion_time = T + job.processing_time
-        s.weighted_completion_time = state.weighted_completion_time + job.weight * s.completion_time
-        # compute and update the lower bound
-        _, LB, _, _ = compute_procedure_SS(s.unscheduled)
-        s.lower_bound = s.weighted_completion_time + LB
-        # resetting all the release dates in the unscheduled jobs (RDA)
-        # add as a new child
-        state.add_child(s)
-        
+    # Thm2 (Rinaldi&Sassano) from Hariri-Potts
+    # -> filtering jobs by earliest due dates
+    candidates_thm2 = list(filter(lambda j: j.release_date <= T, unscheduled))
+    # -> selecting the min p_w jobs
+    if len(candidates_thm2) >= 1:
+        min_pw = min([j.get_weighted_processing() for j in candidates_thm2])
+        candidates = list(filter(lambda j: j.get_weighted_processing() <= min_pw, candidates_thm2))
+        # create new states
+        for job in candidates:
+            s = State(level)
+            s.initialization(state, job, T)
+            # it is not necessary to compute lower bound in this case 
+            # (it is exactly the lower bound of the parent state)
+            s.lower_bound = state.lower_bound
+            # resetting all the release dates in the unscheduled jobs (RDA)
+            # add as a new child
+            state.add_child(s)
+
+    else:
+        # Thm3 (Dessouky&Deogun) + Thm4 Hariri-Potts 
+        # -> retrieving min expected completion time and job with that C
+        min_C = min([T + j.processing_time for j in unscheduled])
+        min_WC = min([j.weight * (T + j.processing_time) for j in unscheduled])
+        thm3_dominance_rule = lambda j: T + j.processing_time <= min_C or j.release_date < min_C
+        thm4_dominance_rule = lambda j: j.weight * (T + j.processing_time) <= min_WC
+        thm34_dominance_rule = lambda j: thm3_dominance_rule(j) or thm4_dominance_rule(j)
+        candidates_thm34 = list(filter(thm34_domination_rule, unscheduled))
+
+        for job in candidates_thm34:
+            # create new states
+            s = State(level)
+            s.initialization(state, job, T)
+            # computing LB
+            _, LB, _, _ = compute_procedure_SS(s.unscheduled)
+            s.lower_bound = state.lower_bound + LB
+            # resetting all the release dates in the unscheduled jobs (RDA)
+            # add as a new child
+            state.add_child(s)

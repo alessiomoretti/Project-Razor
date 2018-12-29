@@ -2,7 +2,7 @@
 In this script the definition of the used algorithms, upon which is built the BnB algorithm.
 References: 
 -  Hariri & Potts ("An algorithm for single machine sequencing with release dates to minimize total weighted completion time")
--  Belouadah, Posner & Potts ("Scheduling with release dates on a single machine to minimize t.otal weighted completion time")
+-  Belouadah, Posner & Potts ("Scheduling with release dates on a single machine to minimize total weighted completion time")
 """
 from scheduling.job import *
 
