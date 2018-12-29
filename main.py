@@ -10,7 +10,15 @@ if __name__ == "__main__":
     print("TOTAL JOBS: {0}\n\n".format(len(jobs)))
 
     if len(jobs) > 0:
-        print("EXECUTION")
-        scheduling_1rC_BnB(jobs)
+        # executing the custom algorithm
+        print("[Info] STARTING EXECUTION")
+        scheduled = scheduling_1rC_BnB(jobs)
+
+        print("----- RESULTS -----")
+        for s in scheduled:
+            # printing the obtained schedules
+            print("Sum Weighted Completion Times:", s[0])
+            print([j.id for j in s[1]])
+            print("")
     else:
         print("[Error] no job available for scheduling")
