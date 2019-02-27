@@ -51,7 +51,7 @@ def scheduling_1rC_BnB(jobs):
             break
 
         # 2.1 create the first candidates using release date dominance rules
-        create_first_candidates(active_node, child_level, lower_bounds)
+        create_first_candidates(active_node, child_level)
         # 2.2 active node search by lower bound
         for child in active_node.children:
             if child.lower_bound <= min(lower_bounds):
@@ -59,12 +59,13 @@ def scheduling_1rC_BnB(jobs):
                     schedules.append(child)
                 else:
                     q.put(child)
+                    lower_bounds.append(child.lower_bound)
 
     return [(s.weighted_completion_time, s.scheduled) for s in schedules]
 
                 
             
-def create_first_candidates(state, level, lower_bounds):
+def create_first_candidates(state, level):
     """
     This utility can be used to generate the first candidates of each state 
     and to update the list of children of the active state.
@@ -94,7 +95,6 @@ def create_first_candidates(state, level, lower_bounds):
             # it is not necessary to compute lower bound in this case 
             # (it is exactly the lower bound of the parent state)
             s.lower_bound = state.lower_bound
-            lower_bounds.append(s.lower_bound)
             # resetting all the release dates in the unscheduled jobs (RDA)
             # add as a new child
             state.add_child(s)
@@ -116,7 +116,6 @@ def create_first_candidates(state, level, lower_bounds):
             # computing LB
             _, LB, _, _ = compute_procedure_SS(s.unscheduled)
             s.lower_bound = state.completion_time + LB
-            lower_bounds.append(s.lower_bound)
             # resetting all the release dates in the unscheduled jobs (RDA)
             # add as a new child
             state.add_child(s)
