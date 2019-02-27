@@ -17,9 +17,11 @@ if __name__ == "__main__":
     if len(jobs) > 0:
         # executing the custom algorithm
         print("[Info] STARTING EXECUTION")
-        scheduled = scheduling_1rC_BnB(jobs)
+        scheduled, generated_nodes = scheduling_1rC_BnB(jobs)
 
         print("[Info] EXECUTION COMPLETED: {0} RESULTS".format(len(scheduled)))
+        print("[Stats] Generated nodes: {0}".format(generated_nodes))
+        
         s = scheduled[0]
         # printing the first of schedules
         print("\n\nSum Weighted Completion Times:", s[0])

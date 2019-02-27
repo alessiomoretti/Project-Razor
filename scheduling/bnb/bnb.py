@@ -8,7 +8,6 @@ References:
 """
 
 from queue import Queue
-
 from scheduling.bnb.state import State
 from scheduling.algorithm import compute_euristic_H, compute_procedure_SS
 from scheduling.job import get_jobs_dictionary
@@ -22,6 +21,9 @@ def scheduling_1rC_BnB(jobs):
     @param jobs: list of Jobs object 
     @return: list of tuples representing the schedules (WC, [Job])
     """
+    # initializing statistics
+    generated_nodes = 0
+
     # 0. Heuristic solution
     h_schedule, h_WC = compute_euristic_H(jobs)
 
@@ -54,6 +56,7 @@ def scheduling_1rC_BnB(jobs):
         create_first_candidates(active_node, child_level)
         # 2.2 active node search by lower bound
         for child in active_node.children:
+            generated_nodes += 1
             if child.lower_bound <= min(lower_bounds):
                 if child_level == len(jobs):
                     schedules.append(child)
@@ -61,7 +64,7 @@ def scheduling_1rC_BnB(jobs):
                     q.put(child)
                     lower_bounds.append(child.lower_bound)
 
-    return [(s.weighted_completion_time, s.scheduled) for s in schedules]
+    return [(s.weighted_completion_time, s.scheduled) for s in schedules], generated_nodes
 
                 
             
