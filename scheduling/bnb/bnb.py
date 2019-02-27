@@ -32,6 +32,9 @@ def scheduling_1rC_BnB(jobs):
     root.unscheduled = jobs
     root.lower_bound = h_WC
 
+    # initializing list of active lower bounds
+    lower_bounds = [root.lower_bound]
+
     # instantiating a queue for the visit of the tree
     q = Queue()
     q.put(root)
@@ -46,28 +49,22 @@ def scheduling_1rC_BnB(jobs):
         child_level = active_node.level + 1
         if child_level > len(jobs):
             break
-        print("LEVEL:", child_level)
 
         # 2.1 create the first candidates using release date dominance rules
-        create_first_candidates(active_node, child_level)
+        create_first_candidates(active_node, child_level, lower_bounds)
         # 2.2 active node search by lower bound
         for child in active_node.children:
-            print([job.id for job in child.scheduled])
-            if child.lower_bound <= active_node.lower_bound or child.lower_bound <= root.lower_bound:
-                print(child.lower_bound, "OK")
+            if child.lower_bound <= min(lower_bounds):
                 if child_level == len(jobs):
                     schedules.append(child)
                 else:
                     q.put(child)
-            else:
-                print(child.lower_bound, "PRUNED!")
-        print("")
 
     return [(s.weighted_completion_time, s.scheduled) for s in schedules]
 
                 
             
-def create_first_candidates(state, level):
+def create_first_candidates(state, level, lower_bounds):
     """
     This utility can be used to generate the first candidates of each state 
     and to update the list of children of the active state.
@@ -79,11 +76,9 @@ def create_first_candidates(state, level):
     # retrieve jobs by release_dates
     jobs_rd = get_jobs_dictionary(state.unscheduled)
     release_dates = list(jobs_rd.keys())
-    # -> compute time variable for further comparison
-    T = max(state.completion_time, min(release_dates))
-
-    # -> filtering the eligible unscheduled
-    unscheduled = list(filter(lambda j: j.release_date <= state.completion_time, state.unscheduled))
+    # -> compute time variable representing the eligible release date
+    T = max(state.completion_time, min(release_dates))    
+    unscheduled = state.unscheduled
     
     # Thm2 (Rinaldi&Sassano) from Hariri-Potts
     # -> filtering jobs by earliest due dates
@@ -99,6 +94,7 @@ def create_first_candidates(state, level):
             # it is not necessary to compute lower bound in this case 
             # (it is exactly the lower bound of the parent state)
             s.lower_bound = state.lower_bound
+            lower_bounds.append(s.lower_bound)
             # resetting all the release dates in the unscheduled jobs (RDA)
             # add as a new child
             state.add_child(s)
@@ -119,7 +115,8 @@ def create_first_candidates(state, level):
             s.initialization(state, job, T)
             # computing LB
             _, LB, _, _ = compute_procedure_SS(s.unscheduled)
-            s.lower_bound = state.lower_bound + LB
+            s.lower_bound = state.completion_time + LB
+            lower_bounds.append(s.lower_bound)
             # resetting all the release dates in the unscheduled jobs (RDA)
             # add as a new child
             state.add_child(s)

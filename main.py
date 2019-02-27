@@ -19,11 +19,11 @@ if __name__ == "__main__":
         print("[Info] STARTING EXECUTION")
         scheduled = scheduling_1rC_BnB(jobs)
 
-        print("----- RESULTS -----")
-        for s in scheduled:
-            # printing the obtained schedules
-            print("Sum Weighted Completion Times:", s[0])
-            print([j.id for j in s[1]])
-            print("")
+        print("[Info] EXECUTION COMPLETED: {0} RESULTS".format(len(scheduled)))
+        s = scheduled[0]
+        # printing the first of schedules
+        print("\n\nSum Weighted Completion Times:", s[0])
+        print([j.id for j in s[1]])
+        print("")
     else:
         print("[Error] no job available for scheduling")
